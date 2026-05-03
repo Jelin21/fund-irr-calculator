@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>指数基金定投收益率计算器</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f6fa;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px;
+    color: #222;
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: #1a1a1a;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 28px;
+  }
+  .card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e8e8e8;
+    padding: 24px 28px;
+    width: 100%;
+    max-width: 560px;
+    margin-bottom: 20px;
+  }
+  .card-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #444;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .badge {
+    background: #e8f0fe;
+    color: #185FA5;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 400;
+  }
+  .input-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .input-label {
+    font-size: 13px;
+    color: #555;
+    white-space: nowrap;
+    width: 100px;
+    flex-shrink: 0;
+  }
+  input[type="number"] {
+    flex: 1;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color .2s;
+    color: #222;
+  }
+  input[type="number"]:focus { border-color: #378ADD; }
+  input[type="number"]::placeholder { color: #bbb; }
+  .btn {
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: opacity .15s, transform .1s;
+    font-family: inherit;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary {
+    background: #185FA5;
+    color: #fff;
+    width: 100%;
+    margin-top: 4px;
+  }
+  .btn-primary:hover { opacity: .88; }
+  .btn-danger {
+    background: #fff;
+    color: #A32D2D;
+    border: 1px solid #f0c0c0;
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+  .btn-danger:hover { background: #fff5f5; }
+  .btn-ghost {
+    background: #f5f6fa;
+    color: #555;
+    border: 1px solid #e0e0e0;
+    width: 100%;
+    margin-top: 8px;
+  }
+  .btn-ghost:hover { background: #ebebf0; }
+  .month-list {
+    max-height: 240px;
+    overflow-y: auto;
+    margin-bottom: 14px;
+    border: 1px solid #f0f0f0;
+    border-radius: 8px;
+  }
+  .month-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 14px;
+    font-size: 13px;
+    border-bottom: 1px solid #f5f5f5;
+    background: #fff;
+  }
+  .month-item:last-child { border-bottom: none; }
+  .month-item .m-no { color: #888; width: 60px; }
+  .month-item .m-amt { font-weight: 500; color: #222; }
+  .month-item .m-del { color: #ccc; cursor: pointer; font-size: 16px; line-height: 1; }
+  .month-item .m-del:hover { color: #A32D2D; }
+  .empty-hint {
+    padding: 20px;
+    text-align: center;
+    font-size: 13px;
+    color: #bbb;
+  }
+  .result-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e8e8e8;
+    padding: 24px 28px;
+    width: 100%;
+    max-width: 560px;
+    display: none;
+  }
+  .result-card.show { display: block; }
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .metric {
+    background: #f7f8fc;
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .metric-label { font-size: 12px; color: #888; margin-bottom: 6px; }
+  .metric-value { font-size: 22px; font-weight: 500; }
+  .metric-value.red { color: #A32D2D; }
+  .metric-value.blue { color: #185FA5; }
+  .metric-value.green { color: #0F6E56; }
+  .progress-bar-wrap {
+    margin-bottom: 6px;
+  }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 4px;
+  }
+  .progress-track {
+    height: 8px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width .4s ease;
+  }
+  .hint-text {
+    font-size: 12px;
+    color: #999;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #f0f0f0;
+    line-height: 1.7;
+  }
+  .error-msg {
+    font-size: 12px;
+    color: #A32D2D;
+    background: #fff5f5;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-top: 8px;
+    display: none;
+  }
+  .error-msg.show { display: block; }
+  .month-counter {
+    font-size: 12px;
+    color: #888;
+    margin-left: auto;
+  }
+  .section-divider {
+    border: none;
+    border-top: 1px solid #f0f0f0;
+    margin: 16px 0;
+  }
+</style>
+</head>
+<body>
+
+<h1>指数基金定投收益率计算器</h1>
+<p class="subtitle">基于 IRR（内部收益率）公式计算月/年复合收益率</p>
+
+<!-- 输入卡片 -->
+<div class="card">
+  <div class="card-title">
+    每月定投记录
+    <span class="badge" id="monthBadge">已录入 0 个月</span>
+    <span style="flex:1"></span>
+    <button class="btn btn-danger" onclick="clearAll()">清空</button>
+  </div>
+
+  <!-- 月份列表 -->
+  <div class="month-list" id="monthList">
+    <div class="empty-hint" id="emptyHint">还没有记录，请在下方输入第 1 个月的定投金额</div>
+  </div>
+
+  <!-- 添加月份 -->
+  <div class="input-row">
+    <label class="input-label" id="monthLabel">第 1 个月</label>
+    <input type="number" id="amtInput" placeholder="输入定投金额（元）" min="0" step="0.01"
+           onkeydown="if(event.key==='Enter') addMonth()">
+    <button class="btn btn-primary" style="width:auto;padding:9px 16px;margin-top:0" onclick="addMonth()">添加</button>
+  </div>
+  <div class="error-msg" id="amtError">请输入有效的金额（大于 0 的数字）</div>
+
+  <hr class="section-divider">
+
+  <!-- 总资产输入 -->
+  <div class="card-title" style="margin-bottom:12px">输入当前总资产（本金 + 收益）</div>
+  <div class="input-row">
+    <label class="input-label">总资产</label>
+    <input type="number" id="totalInput" placeholder="输入总资产金额（元）" min="0" step="0.01"
+           onkeydown="if(event.key==='Enter') calculate()">
+  </div>
+  <div class="error-msg" id="totalError">请输入有效的总资产金额（大于 0）</div>
+
+  <button class="btn btn-primary" onclick="calculate()">计算收益率</button>
+  <button class="btn btn-ghost" onclick="resetAll()">重新开始</button>
+</div>
+
+<!-- 结果卡片 -->
+<div class="result-card" id="resultCard">
+  <div class="card-title">计算结果</div>
+
+  <div class="metrics-grid" id="metricsGrid">
+    <!-- 动态填入 -->
+  </div>
+
+  <div class="progress-bar-wrap">
+    <div class="progress-label">
+      <span>本金</span>
+      <span id="principalLabel">—</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="principalBar" style="background:#378ADD;width:0%"></div>
+    </div>
+    <div class="progress-label">
+      <span>收益</span>
+      <span id="profitLabel">—</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="profitBar" style="background:#A32D2D;width:0%"></div>
+    </div>
+  </div>
+
+  <div class="hint-text" id="hintText"></div>
+</div>
+
+<script>
+  let months = [];
+
+  function fmt(n) {
+    return '¥' + n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function renderList() {
+    const list = document.getElementById('monthList');
+    const empty = document.getElementById('emptyHint');
+    const badge = document.getElementById('monthBadge');
+    const label = document.getElementById('monthLabel');
+    badge.textContent = '已录入 ' + months.length + ' 个月';
+    label.textContent = '第 ' + (months.length + 1) + ' 个月';
+    if (months.length === 0) {
+      list.innerHTML = '';
+      list.appendChild(empty);
+      empty.style.display = 'block';
+      return;
+    }
+    let html = '';
+    months.forEach(function(amt, i) {
+      html += '<div class="month-item">' +
+        '<span class="m-no">第 ' + (i + 1) + ' 个月</span>' +
+        '<span class="m-amt">' + fmt(amt) + '</span>' +
+        '<span class="m-del" onclick="removeMonth(' + i + ')" title="删除">×</span>' +
+        '</div>';
+    });
+    list.innerHTML = html;
+    list.scrollTop = list.scrollHeight;
+  }
+
+  function addMonth() {
+    const input = document.getElementById('amtInput');
+    const errEl = document.getElementById('amtError');
+    const val = parseFloat(input.value);
+    if (isNaN(val) || val <= 0) {
+      errEl.classList.add('show');
+      input.focus();
+      return;
+    }
+    errEl.classList.remove('show');
+    months.push(val);
+    input.value = '';
+    input.focus();
+    renderList();
+    // 隐藏旧结果
+    document.getElementById('resultCard').classList.remove('show');
+  }
+
+  function removeMonth(i) {
+    months.splice(i, 1);
+    renderList();
+    document.getElementById('resultCard').classList.remove('show');
+  }
+
+  function clearAll() {
+    months = [];
+    renderList();
+    document.getElementById('resultCard').classList.remove('show');
+  }
+
+  function resetAll() {
+    months = [];
+    document.getElementById('amtInput').value = '';
+    document.getElementById('totalInput').value = '';
+    document.getElementById('amtError').classList.remove('show');
+    document.getElementById('totalError').classList.remove('show');
+    renderList();
+    document.getElementById('resultCard').classList.remove('show');
+  }
+
+  // IRR 求解（牛顿-拉弗森法）
+  function calcIRR(cashFlows) {
+    var rate = 0.01;
+    for (var iter = 0; iter < 2000; iter++) {
+      var npv = 0, dnpv = 0;
+      for (var t = 0; t < cashFlows.length; t++) {
+        var denom = Math.pow(1 + rate, t);
+        npv += cashFlows[t] / denom;
+        dnpv -= t * cashFlows[t] / (denom * (1 + rate));
+      }
+      if (Math.abs(dnpv) < 1e-14) break;
+      var newRate = rate - npv / dnpv;
+      if (Math.abs(newRate - rate) < 1e-10) { rate = newRate; break; }
+      // 防止发散：限制步长
+      if (newRate < -0.999) newRate = -0.5;
+      rate = newRate;
+    }
+    return rate;
+  }
+
+  function calculate() {
+    const totalInput = document.getElementById('totalInput');
+    const totalErr = document.getElementById('totalError');
+    const totalVal = parseFloat(totalInput.value);
+
+    // 校验
+    if (isNaN(totalVal) || totalVal <= 0) {
+      totalErr.classList.add('show');
+      totalInput.focus();
+      return;
+    }
+    totalErr.classList.remove('show');
+
+    if (months.length === 0) {
+      alert('请先录入至少 1 个月的定投金额');
+      return;
+    }
+
+    const totalInvested = months.reduce(function(a, b) { return a + b; }, 0);
+    const profit = totalVal - totalInvested;
+    const simpleReturn = profit / totalInvested;
+
+    // 构建现金流（投入为负，最终总资产为正）
+    var cashFlows = months.map(function(m) { return -m; });
+    cashFlows.push(totalVal);
+
+    var monthlyIRR, yearlyIRR;
+    try {
+      monthlyIRR = calcIRR(cashFlows);
+      yearlyIRR = Math.pow(1 + monthlyIRR, 12) - 1;
+    } catch(e) {
+      alert('收益率计算失败，请检查数据是否合理。');
+      return;
+    }
+
+    // 渲染结果
+    var grid = document.getElementById('metricsGrid');
+    var monthCount = months.length;
+    var metricsHTML =
+      '<div class="metric"><div class="metric-label">累计投入</div><div class="metric-value blue">' + fmt(totalInvested) + '</div></div>' +
+      '<div class="metric"><div class="metric-label">当前总资产</div><div class="metric-value blue">' + fmt(totalVal) + '</div></div>' +
+      '<div class="metric"><div class="metric-label">累计收益</div><div class="metric-value ' + (profit >= 0 ? 'red' : 'green') + '">' + fmt(profit) + '</div></div>' +
+      '<div class="metric"><div class="metric-label">月复合收益率（IRR）</div><div class="metric-value red">' + (monthlyIRR * 100).toFixed(4) + '%</div></div>';
+
+    if (monthCount >= 12) {
+      metricsHTML +=
+        '<div class="metric" style="grid-column:span 2"><div class="metric-label">年复合收益率（CAGR）= (1 + 月IRR)^12 - 1</div><div class="metric-value red" style="font-size:28px">' + (yearlyIRR * 100).toFixed(4) + '%</div></div>';
+    }
+    grid.innerHTML = metricsHTML;
+
+    // 进度条
+    var principalPct = (totalInvested / totalVal * 100).toFixed(1);
+    var profitPct = Math.max(0, (profit / totalVal * 100)).toFixed(1);
+    document.getElementById('principalBar').style.width = principalPct + '%';
+    document.getElementById('profitBar').style.width = profitPct + '%';
+    document.getElementById('principalLabel').textContent = fmt(totalInvested) + '（' + principalPct + '%）';
+    document.getElementById('profitLabel').textContent = fmt(profit) + '（' + (profit >= 0 ? '+' : '') + profitPct + '%）';
+
+    // 提示文字
+    var hint = '定投月数：' + monthCount + ' 个月　|　简单收益率：' + (simpleReturn * 100).toFixed(2) + '%';
+    if (monthCount < 12) {
+      hint += '\n当前定投不满 12 个月，年复合收益率暂不显示。换算年化参考值：' + (yearlyIRR * 100).toFixed(2) + '%（仅供参考）';
+    }
+    hint += '\n\nIRR 考虑了每笔资金的投入时间，比简单收益率更能反映实际收益水平。';
+    document.getElementById('hintText').style.whiteSpace = 'pre-line';
+    document.getElementById('hintText').textContent = hint;
+
+    document.getElementById('resultCard').classList.add('show');
+    document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // 初始化
+  renderList();
+</script>
+</body>
+</html>
